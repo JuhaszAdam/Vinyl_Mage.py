@@ -45,7 +45,7 @@ class CsvTransformer:
         # May not be enough. See: izip
         paired_list = dict(zip(headers, row))
 
-        return row
+        return paired_list
         new_vinyl = Vinyl
 
         new_vinyl.product_sku = row[0]

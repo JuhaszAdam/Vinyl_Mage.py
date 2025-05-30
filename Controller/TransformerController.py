@@ -1,6 +1,8 @@
 import os
 
 from Transformer.CsvTransformer import CsvTransformer
+from Transformer.XmlTransformer import XmlTransformer
+
 
 class TransformerController:
 
@@ -12,6 +14,10 @@ class TransformerController:
 
         if '.csv' in extension:
             self.transformer = CsvTransformer()
+            return self.transformer.transform(file_name)
+
+        if '.xml' in extension:
+            self.transformer = XmlTransformer()
             return self.transformer.transform(file_name)
 
         if '.txt' in extension:

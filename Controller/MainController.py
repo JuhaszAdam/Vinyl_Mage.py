@@ -16,6 +16,7 @@ class MainController:
         self.transformerController: TransformerController = TransformerController()
         self.root = root
         self._init_window()
+        self.root.bind('<Return>', self.file_import)
 
     def _init_window(self):
         self.root.title("Vinyl Mage")
@@ -41,7 +42,7 @@ class MainController:
             placeholder_text="minta.csv",
         )
         ### TODO DELETE ME ###
-        input_file_name.insert('end', "minta.csv") #TODO: for debug
+        input_file_name.insert('end', "minta.xml") #TODO: for debug
 
         preview_tree = CTkTextbox(
             self.root,
@@ -81,7 +82,7 @@ class MainController:
         ### Fullscreen ###
         self.root.state('zoomed')
 
-    def file_import(self):
+    def file_import(self, event=None):
         filename = self.work_directory + "\\" + self.app['input_file_name'].get()
         if len(filename) != 0:
             result = self.transformerController.transform(filename)
