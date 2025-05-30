@@ -7,10 +7,7 @@ class MainController:
     root: CTk
     content = None
 
-    view = {}
-
-    style_background = '#202020'
-    style_accent_1 = 'yellow'
+    app = {}
 
     def __init__(self, root: CTk):
         self.transformerController: TransformerController = TransformerController()
@@ -20,14 +17,13 @@ class MainController:
     def _init_window(self):
         self.root.title("Vinyl Mage")
         self.root.geometry("800x600")
-        self.root.configure(background=self.style_background)
 
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_rowconfigure(0, weight=0)
 
         label_import_file = CTkLabel(
             self.root,
-            text="Import File",
+            text="Importálás",
         )
 
         label_preview_data = CTkLabel(
@@ -66,18 +62,18 @@ class MainController:
         btn_export.grid(row=2, column=1, sticky='ne', pady=20, padx=20)
 
         ### Save references ###
-        self.view['label_import_file'] = label_import_file
-        self.view['label_preview_data'] = label_preview_data
-        self.view['input_file_name'] = input_file_name
-        self.view['preview_tree'] = preview_tree
-        self.view['btn_import'] = btn_import
-        self.view['btn_export'] = btn_export
+        self.app['label_import_file'] = label_import_file
+        self.app['label_preview_data'] = label_preview_data
+        self.app['input_file_name'] = input_file_name
+        self.app['preview_tree'] = preview_tree
+        self.app['btn_import'] = btn_import
+        self.app['btn_export'] = btn_export
 
         ### Fullscreen ###
         self.root.state('zoomed')
 
     def file_import(self):
-        filename = self.view['input_file_name'].get()
+        filename = self.app['input_file_name'].get()
         if len(filename) != 0:
             result = self.transformerController.transform(filename)
             print(result)
