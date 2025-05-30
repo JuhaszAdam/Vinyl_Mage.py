@@ -1,3 +1,5 @@
+import pprint
+
 from customtkinter import *
 
 from Controller.TransformerController import TransformerController
@@ -6,6 +8,7 @@ from Controller.TransformerController import TransformerController
 class MainController:
     root: CTk
     content = None
+    work_directory = "Resources"
 
     app = {}
 
@@ -18,8 +21,10 @@ class MainController:
         self.root.title("Vinyl Mage")
         self.root.geometry("800x600")
 
-        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=0)
+        self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=0)
+        self.root.grid_rowconfigure(1, weight=1)
 
         label_import_file = CTkLabel(
             self.root,
@@ -33,7 +38,10 @@ class MainController:
 
         input_file_name = CTkEntry(
             self.root,
+            placeholder_text="minta.csv",
         )
+        ### TODO DELETE ME ###
+        input_file_name.insert('end', "minta.csv") #TODO: for debug
 
         preview_tree = CTkTextbox(
             self.root,
@@ -56,7 +64,8 @@ class MainController:
         label_preview_data.grid(row=0, column=1, sticky='ne', pady=20, padx=20)
 
         input_file_name.grid(row=1, column=0, sticky='nw', pady=20, padx=20)
-        preview_tree.grid(row=1, column=1, sticky='ne', pady=20, padx=20)
+        input_file_name.focus()
+        preview_tree.grid(row=1, column=1, sticky='NSEW', pady=20, padx=20)
 
         btn_import.grid(row=2, column=0, sticky='nw', pady=20, padx=20)
         btn_export.grid(row=2, column=1, sticky='ne', pady=20, padx=20)
@@ -73,16 +82,16 @@ class MainController:
         self.root.state('zoomed')
 
     def file_import(self):
-        filename = self.app['input_file_name'].get()
+        filename = self.work_directory + "\\" + self.app['input_file_name'].get()
         if len(filename) != 0:
             result = self.transformerController.transform(filename)
-            print(result)
+            self.app['preview_tree'].delete('0.0', 'end')
+            self.app['preview_tree'].insert('1.0', pprint.pformat(result))
             # self.refresh_preview()
 
     def file_export(self):
         print("export")
 
     def refresh_preview(self):
-        preview_tree = self.root.nametowidget('preview_tree')
-        preview_tree.delete(*preview_tree.get_children())
-        preview_tree.insert("", 'end', text=self.content)
+        preview_tree = self.app['preview_tree']
+

@@ -36,15 +36,16 @@ class CsvTransformer:
                     vinyl_list[i] = self.create_vinyl_from_row(row, headers)
                     i+=1
 
+                return vinyl_list
+
         except FileNotFoundError as error:
             return error.strerror
 
     def create_vinyl_from_row(self, row, headers):
-
         # May not be enough. See: izip
         paired_list = dict(zip(headers, row))
 
-
+        return row
         new_vinyl = Vinyl
 
         new_vinyl.product_sku = row[0]
