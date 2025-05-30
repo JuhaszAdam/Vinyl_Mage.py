@@ -1,12 +1,9 @@
 import xml.etree.ElementTree as ET
-from typing import Dict, Any
 
-from Adapter.BertusAdapter import BertusAdapter
-from Model.Vinyl import Vinyl
+from Transformer.AbstractTransformer import Transformer
 
 
-class XmlTransformer:
-    adapter = BertusAdapter
+class XmlTransformer(Transformer):
 
     def transform(self, file_name):
         try:

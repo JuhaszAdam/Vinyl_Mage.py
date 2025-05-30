@@ -1,13 +1,11 @@
 import csv
 
-from Model.Vinyl import Vinyl
+from Transformer.AbstractTransformer import Transformer
 
 
-class CsvTransformer:
+class CsvTransformer(Transformer):
     config = {
         'newline': '',
-        'delimiter': ' ',
-        'quotechar': '|',
         'encoding': 'utf-8'
     }
 
@@ -34,7 +32,7 @@ class CsvTransformer:
                         continue
 
                     vinyl_list[i] = self.create_vinyl_from_row(row, headers)
-                    i+=1
+                    i += 1
 
                 return vinyl_list
 
@@ -43,10 +41,5 @@ class CsvTransformer:
 
     def create_vinyl_from_row(self, row, headers):
         # May not be enough. See: izip
-        paired_list = dict(zip(headers, row))
-
-        return paired_list
-        new_vinyl = Vinyl
-
-        new_vinyl.product_sku = row[0]
-
+        paired_dict = dict(zip(headers, row))
+        return self.adapter.adapt(paired_dict)

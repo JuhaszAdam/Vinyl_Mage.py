@@ -42,7 +42,7 @@ class MainController:
             placeholder_text="minta.csv",
         )
         ### TODO DELETE ME ###
-        input_file_name.insert('end', "minta.xml") #TODO: for debug
+        input_file_name.insert('end', "minta.xml")  # TODO: for debug
 
         preview_tree = CTkTextbox(
             self.root,
@@ -87,7 +87,8 @@ class MainController:
         if len(filename) != 0:
             result = self.transformerController.transform(filename)
             self.app['preview_tree'].delete('0.0', 'end')
-            self.app['preview_tree'].insert('1.0', pprint.pformat(result))
+            for i in range(len(result)):
+                self.app['preview_tree'].insert(f'{i}.0', pprint.pformat(result[i].attr)) ## ULTRA HACK BLACK MAGIC
             # self.refresh_preview()
 
     def file_export(self):
@@ -95,4 +96,3 @@ class MainController:
 
     def refresh_preview(self):
         preview_tree = self.app['preview_tree']
-
