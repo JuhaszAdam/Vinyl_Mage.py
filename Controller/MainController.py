@@ -11,6 +11,7 @@ class MainController:
     work_directory = "Resources"
 
     app = {}
+    vinyl_list = {}
 
     def __init__(self, root: CTk):
         self.transformerController: TransformerController = TransformerController()
@@ -85,14 +86,14 @@ class MainController:
     def file_import(self, event=None):
         filename = self.work_directory + "\\" + self.app['input_file_name'].get()
         if len(filename) != 0:
-            result = self.transformerController.transform(filename)
+            self.vinyl_list = self.transformerController.transform(filename)
             self.app['preview_tree'].delete('0.0', 'end')
-            for i in range(len(result)):
-                self.app['preview_tree'].insert(f'{i}.0', pprint.pformat(result[i].attr)) ## ULTRA HACK BLACK MAGIC
-            # self.refresh_preview()
+            for i, vinyl in self.vinyl_list.items():
+                self.app['preview_tree'].insert('end', f'\n*********** Item {i}***********\n')
+                self.app['preview_tree'].insert('end', pprint.pformat(vinyl.attr))  ## ULTRA HACK BLACK MAGIC
 
     def file_export(self):
-        print("export")
+        self.transformerController.export(self.vinyl_list)
 
     def refresh_preview(self):
         preview_tree = self.app['preview_tree']

@@ -27,3 +27,14 @@ class XmlTransformer(Transformer):
             paired_list[attrib.tag] = attrib.text
 
         return self.adapter.adapt(paired_list)
+
+    def export(self, vinyl_list: dict):
+        products = ET.Element('products')
+        for i, vinyl in vinyl_list.items():
+            product = ET.SubElement(products, 'product')
+            for key, attr in vinyl.attr.items():
+                ET.SubElement(product, key).text=attr
+
+        tree = ET.ElementTree(products)
+        ET.indent(tree, '    ')
+        tree.write('Resources/Test_Import.xml', encoding="utf-8", xml_declaration=True)

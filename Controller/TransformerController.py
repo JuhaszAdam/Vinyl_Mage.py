@@ -26,3 +26,7 @@ class TransformerController:
 
         return f"Error: '{extension}' format is currently not supported."
 
+    def export(self, vinyl_list):
+        self.transformer = XmlTransformer()
+        self.transformer.export(vinyl_list)
+

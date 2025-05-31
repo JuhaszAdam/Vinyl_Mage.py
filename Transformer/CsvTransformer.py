@@ -17,10 +17,7 @@ class CsvTransformer(Transformer):
 
                 has_header = csv.Sniffer().has_header(file.read())
                 file.seek(0, 0)
-                reader = csv.reader(
-                    file,
-                    dialect
-                )
+                reader = csv.reader(file, dialect)
 
                 vinyl_list = {}
                 headers = {}
