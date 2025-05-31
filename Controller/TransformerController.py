@@ -1,32 +1,29 @@
 import os
 
 from Transformer.CsvTransformer import CsvTransformer
+from Transformer.JsonTransformer import JsonTransformer
 from Transformer.XmlTransformer import XmlTransformer
 
 
 class TransformerController:
 
-    def __init__(self):
-        self.transformer = None
-
-    def transform(self, file_name):
+    @staticmethod
+    def transform(file_name):
         extension = os.path.splitext(file_name)[1]
 
-        if '.csv' in extension:
-            self.transformer = CsvTransformer()
-            return self.transformer.transform(file_name)
+        match extension:
+            case '.csv':
+                return CsvTransformer().transform(file_name)
 
-        if '.xml' in extension:
-            self.transformer = XmlTransformer()
-            return self.transformer.transform(file_name)
+            case '.xml':
+                return XmlTransformer().transform(file_name)
 
-        if '.txt' in extension:
-            print('Mit csináljak egy txt vel? nevezd át legalább. Nem fogok külön megírni egy analizálót hogy mégis mit akarsz megetetni velem.')
-            return
+            case '.json':
+                return JsonTransformer().transform(file_name)
 
-        return f"Error: '{extension}' format is currently not supported."
+            case _:
+                return f"Error: '{extension}' format is currently not supported."
 
-    def export(self, vinyl_list):
-        self.transformer = XmlTransformer()
-        self.transformer.export(vinyl_list)
-
+    @staticmethod
+    def export(vinyl_list):
+        XmlTransformer().export(vinyl_list)

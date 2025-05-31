@@ -14,7 +14,6 @@ class MainController:
     vinyl_list = {}
 
     def __init__(self, root: CTk):
-        self.transformerController: TransformerController = TransformerController()
         self.root = root
         self._init_window()
         self.root.bind('<Return>', self.file_import)
@@ -43,7 +42,7 @@ class MainController:
             placeholder_text="minta.csv",
         )
         ### TODO DELETE ME ###
-        input_file_name.insert('end', "minta.xml")  # TODO: for debug
+        input_file_name.insert('end', "abba.json")  # TODO: for debug
 
         preview_tree = CTkTextbox(
             self.root,
@@ -86,14 +85,14 @@ class MainController:
     def file_import(self, event=None):
         filename = self.work_directory + "\\" + self.app['input_file_name'].get()
         if len(filename) != 0:
-            self.vinyl_list = self.transformerController.transform(filename)
+            self.vinyl_list = TransformerController.transform(filename)
             self.app['preview_tree'].delete('0.0', 'end')
-            for i, vinyl in self.vinyl_list.items():
-                self.app['preview_tree'].insert('end', f'\n*********** Item {i}***********\n')
+            for vinyl in self.vinyl_list:
+                self.app['preview_tree'].insert('end', f'\n*********** Item ***********\n')
                 self.app['preview_tree'].insert('end', pprint.pformat(vinyl.attr))  ## ULTRA HACK BLACK MAGIC
 
     def file_export(self):
-        self.transformerController.export(self.vinyl_list)
+        TransformerController.export(self.vinyl_list)
 
     def refresh_preview(self):
         preview_tree = self.app['preview_tree']

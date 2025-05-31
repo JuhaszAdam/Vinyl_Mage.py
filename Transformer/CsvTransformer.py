@@ -19,7 +19,7 @@ class CsvTransformer(Transformer):
                 file.seek(0, 0)
                 reader = csv.reader(file, dialect)
 
-                vinyl_list = {}
+                vinyl_list = []
                 headers = {}
                 i = 0
                 for row in reader:
@@ -28,7 +28,7 @@ class CsvTransformer(Transformer):
                         has_header = False
                         continue
 
-                    vinyl_list[i] = self.create_vinyl_from_row(row, headers)
+                    vinyl_list.append(self.create_vinyl_from_row(row, headers))
                     i += 1
 
                 return vinyl_list

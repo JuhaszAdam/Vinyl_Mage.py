@@ -9,12 +9,9 @@ class XmlTransformer(Transformer):
         try:
             file = ET.parse(file_name)
 
-            vinyl_list = {}
-            i = 0
-
+            vinyl_list = []
             for row in file.getroot():
-                vinyl_list[i] = self.create_vinyl_from_row(row)
-                i += 1
+                vinyl_list.append(self.create_vinyl_from_row(row))
 
             return vinyl_list
 
@@ -28,12 +25,13 @@ class XmlTransformer(Transformer):
 
         return self.adapter.adapt(paired_list)
 
-    def export(self, vinyl_list: dict):
+    @staticmethod
+    def export(vinyl_list: list):
         products = ET.Element('products')
-        for i, vinyl in vinyl_list.items():
+        for vinyl in vinyl_list:
             product = ET.SubElement(products, 'product')
             for key, attr in vinyl.attr.items():
-                ET.SubElement(product, key).text=attr
+                ET.SubElement(product, key).text = str(attr)
 
         tree = ET.ElementTree(products)
         ET.indent(tree, '    ')
