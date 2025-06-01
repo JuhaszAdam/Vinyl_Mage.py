@@ -1,12 +1,24 @@
+import ast
+import json
+import urllib.request
+
+from dateutil import parser
+
 from Adapter.AbstractAdapter import AbstractAdapter
 from Model.Vinyl import Vinyl
 
 
 class BertusAdapter(AbstractAdapter):
-    config = {
-        'current_bb_id': 486,
-        'product.szorzo': 1.7,
-    }
+    config = {}
+
+    def __init__(self):
+        try:
+            with open('Resources/config.json', 'r', encoding='utf-8') as file:
+                self.config = json.load(file)
+
+        except FileNotFoundError as e:
+            print('Nem tudom megnyitni a config file-t! (Resources/config.py)')
+            raise e
 
     def adapt(self, bertus_vinyl_data: dict):
 
@@ -22,32 +34,77 @@ class BertusAdapter(AbstractAdapter):
         return vinyl
 
     def bertus_api_import(self, bertus_vinyl_data):
-
         vinyl_list = []
 
         for item in bertus_vinyl_data['Collection']:
             vinyl = Vinyl()
             vinyl.attr = {}
             self._set_default_attrs(vinyl)
-            categories = ""
+            categories = []
+            category_ids = []
+            short_description = []
+            label = []
             name = ""
 
             for key, attr in item.items():
-                if key == 'Id':
-                    vinyl.attr['product.model'] = attr
+                if key == 'ReleaseDate':
+                    short_description.insert(0, f"Megjelenés: {parser.parse(attr).strftime('%Y. %m. %d')}<br />")
                 if key == 'Artist':
                     vinyl.attr['attr_values.eloado.hu'] = attr
                     name += f"{attr} - "
+                    short_description.insert(1, f"Előadó: {attr}<br />")
+                if key == 'Genre':
+                    category_key = self.config['bertus_categories'][attr]
+                    categories.append(self.config['bb_categories'][str(category_key)])
+                    category_ids.append(str(category_key))
+                    short_description.insert(2, f"Műfaj: {self.config['bb_categories'][str(category_key)]}<br />")
+                if key == 'MediaId':
+                    short_description.insert(3, f"Formátum: {attr}<br />")
+                if key == 'OriginDescription':
+                    short_description.insert(4, f"Származás: {attr}<br />")
+                if key == 'Availability':
+                    short_description.insert(5,
+                                             f"Elérhetőség: {
+                                             'Rendelhető' if str(attr) == 'InStock' else 'Nincs készleten'
+                                             }<br />")
+                if key == 'MajorDescription':
+                    if not str(attr) == "0":
+                        label.insert(0, str(attr))
+
+                if key == 'LabelDescription':
+                    label.insert(1, str(attr))
+
+                if key == 'Id':
+                    vinyl.attr['product.model'] = attr
+                    if self.config['_get_info_from_api']['tracklist'] == "1":
+                        tracklist = self._fetch_from_api(f'/api/v1/articles/{attr}/tracks').read()
+                        tracklist = self._generate_html_from_tracklist(tracklist)
+                        vinyl.attr['product_description.custom_content.1.hu'] = tracklist
                 if key == 'EANCode':
                     vinyl.attr['product.gtin'] = attr
-                if key == 'GenreDescription':
-                    categories += f"{attr}"
                 if key == 'Title':
                     vinyl.attr['product_description.name.hu'] = name + attr
                 if key == 'ListPrice':
                     vinyl.attr['product.alapar'] = attr['Amount']
 
-            vinyl.attr['product_to_category.category_name'] = categories
+                if key == 'Links':
+                    for subkey, link in attr.items():
+                        if subkey == 'dvdInfo' and self.config['_get_info_from_api']['dvdInfo'] == "1":
+                            dvd_info = self._fetch_from_api(link['Href']).read()
+                            vinyl.attr['dvdInfo'] = dvd_info
+                        if subkey == 'extraInfo' and self.config['_get_info_from_api']['extraInfo'] == "1":
+                            dvd_info = self._fetch_from_api(link['Href']).read()
+                            vinyl.attr['extraInfo'] = dvd_info
+                        if subkey == 'classicalInfo' and self.config['_get_info_from_api']['classicalInfo'] == "1":
+                            dvd_info = self._fetch_from_api(link['Href']).read()
+                            vinyl.attr['classicalInfo'] = dvd_info
+
+            short_description.insert(6, f"Kiadó: {" - ".join(label)}<br />")
+            vinyl.attr['product_to_category.category_name'] = ";".join(
+                categories)  ### TODO: dokumentációban ";" az elválasztó, mintában ","
+            vinyl.attr['product_to_category.category_id'] = ";".join(category_ids)
+            vinyl.attr['product_description.short_description.hu'] = "\n".join(short_description)
+
             vinyl_list.append(vinyl)
 
         return vinyl_list
@@ -63,3 +120,39 @@ class BertusAdapter(AbstractAdapter):
     def _generate_bb_id(self):
         self.config['current_bb_id'] += 1
         return 'BB' + str(self.config['current_bb_id']).rjust(6, '0')
+
+    def _fetch_from_api(self, url):
+        try:
+            headers = {
+                'Cache-Control': 'no-cache',
+                'Authorization': self.config['Authorization'],
+                'Ocp-Apim-Subscription-Key': self.config['Ocp-Apim-Subscription-Key']
+            }
+            url = f"https://myapi.bertus.com/prod{url}"
+            req = urllib.request.Request(url, headers=headers)
+
+            req.get_method = lambda: 'GET'
+            response = urllib.request.urlopen(req)
+
+            return response
+        except Exception as e:
+            print(e)
+
+    def _generate_html_from_tracklist(self, tracklist):
+        html_tracklist = "<p><strong>Zeneszámok</strong></p>"
+        ordered_tracks = {}
+        tracklist = ast.literal_eval(tracklist.decode('utf-8'))
+        for track in tracklist['Tracks']:
+            unit_number = str(track['UnitNumber'])
+            if not unit_number in ordered_tracks :
+                ordered_tracks[unit_number] = []
+            ordered_tracks[unit_number].append(track['Description'])
+
+        for i, unit in ordered_tracks.items():
+            html_tracklist += f"<hr><p> - {i} - </p>"
+            html_tracklist += "<ol>"
+            for track in unit:
+                html_tracklist += f"<li>{track}"
+            html_tracklist += "</ol>"
+
+        return html_tracklist
