@@ -1,7 +1,9 @@
 import ast
 import json
+import os
 import urllib.request
 
+import requests
 from dateutil import parser
 
 from Adapter.AbstractAdapter import AbstractAdapter
@@ -44,6 +46,7 @@ class BertusAdapter(AbstractAdapter):
             category_ids = []
             short_description = []
             label = []
+            description_tags = []
             name = ""
 
             for key, attr in item.items():
@@ -53,11 +56,14 @@ class BertusAdapter(AbstractAdapter):
                     vinyl.attr['attr_values.eloado.hu'] = attr
                     name += f"{attr} - "
                     short_description.insert(1, f"Előadó: {attr}<br />")
+                    description_tags.insert(1, attr)
                 if key == 'Genre':
                     category_key = self.config['bertus_categories'][attr]
                     categories.append(self.config['bb_categories'][str(category_key)])
                     category_ids.append(str(category_key))
-                    short_description.insert(2, f"Műfaj: {self.config['bb_categories'][str(category_key)]}<br />")
+                    category_name = self.config['bb_categories'][str(category_key)]
+                    description_tags.insert(2, category_name)
+                    short_description.insert(2, f"Műfaj: {category_name}<br />")
                 if key == 'MediaId':
                     short_description.insert(3, f"Formátum: {attr}<br />")
                 if key == 'OriginDescription':
@@ -70,9 +76,11 @@ class BertusAdapter(AbstractAdapter):
                 if key == 'MajorDescription':
                     if not str(attr) == "0":
                         label.insert(0, str(attr))
+                        vinyl.attr['product.manufacturer_id'] = str(attr)
 
                 if key == 'LabelDescription':
                     label.insert(1, str(attr))
+                    description_tags.insert(0, str(attr))
 
                 if key == 'Id':
                     vinyl.attr['product.model'] = attr
@@ -98,12 +106,24 @@ class BertusAdapter(AbstractAdapter):
                         if subkey == 'classicalInfo' and self.config['_get_info_from_api']['classicalInfo'] == "1":
                             dvd_info = self._fetch_from_api(link['Href']).read()
                             vinyl.attr['classicalInfo'] = dvd_info
+                        if (subkey == 'cover'
+                                and self.config['_get_info_from_api']['getMainImage'] == "1"
+                                and not link['Href'] == 'https://my.bertus.com/assets/images/imcomingsoonbertus.svg'):
+                            img_data = requests.get(link['Href']).content
+                            file_name = os.path.basename(link['Href'])
+                            pre, ext = os.path.splitext(file_name)
+                            file_name = pre + '.jpg'
+                            with open(f"Resources/_upload_images/{file_name}", 'wb') as handler:
+                                handler.write(img_data)
+                            vinyl.attr['product.image'] = 'product/' + file_name
+                            handler.close()
 
             short_description.insert(6, f"Kiadó: {" - ".join(label)}<br />")
-            vinyl.attr['product_to_category.category_name'] = ";".join(
-                categories)  ### TODO: dokumentációban ";" az elválasztó, mintában ","
+            vinyl.attr['product_to_category.category_name'] = ";".join(categories)
             vinyl.attr['product_to_category.category_id'] = ";".join(category_ids)
+            vinyl.attr['product_description.tags.hu'] = ";".join(description_tags)
             vinyl.attr['product_description.short_description.hu'] = "\n".join(short_description)
+            vinyl.attr['product_description.parameters.hu'] = "\n".join(short_description)
 
             vinyl_list.append(vinyl)
 
@@ -114,8 +134,10 @@ class BertusAdapter(AbstractAdapter):
         vinyl.attr['product.status'] = 0
         vinyl.attr['product.free_shipping'] = False
         vinyl.attr['product.sort_order'] = 0
-        vinyl.attr['product.manufacturer_id'] = "Bertus"
         vinyl.attr['product.szorzo'] = self.config['product.szorzo']
+        vinyl.attr['product_description.meta_description.hu'] = "[CATEGORY]"
+        vinyl.attr['product_description.custom_title.hu'] = "[PRODUCT]"
+        vinyl.attr['product_description.custom_title.hu'] = "db"
 
     def _generate_bb_id(self):
         self.config['current_bb_id'] += 1
@@ -138,13 +160,14 @@ class BertusAdapter(AbstractAdapter):
         except Exception as e:
             print(e)
 
-    def _generate_html_from_tracklist(self, tracklist):
+    @staticmethod
+    def _generate_html_from_tracklist(tracklist):
         html_tracklist = "<p><strong>Zeneszámok</strong></p>"
         ordered_tracks = {}
         tracklist = ast.literal_eval(tracklist.decode('utf-8'))
         for track in tracklist['Tracks']:
             unit_number = str(track['UnitNumber'])
-            if not unit_number in ordered_tracks :
+            if not unit_number in ordered_tracks:
                 ordered_tracks[unit_number] = []
             ordered_tracks[unit_number].append(track['Description'])
 
