@@ -42,7 +42,7 @@ class MainController:
             placeholder_text="minta.csv",
         )
         ### TODO DELETE ME ###
-        input_file_name.insert('end', "abba.json")  # TODO: for debug
+        input_file_name.insert('end', "Wish_list-2025-6-3.csv")  # TODO: for debug
 
         preview_tree = CTkTextbox(
             self.root,
@@ -87,9 +87,10 @@ class MainController:
         if len(filename) != 0:
             self.vinyl_list = TransformerController.transform(filename)
             self.app['preview_tree'].delete('0.0', 'end')
+            self.app['preview_tree'].insert('end', f'\nImportált termékek száma: {len(self.vinyl_list)}\n')
             for vinyl in self.vinyl_list:
                 self.app['preview_tree'].insert('end', f'\n*********** Item ***********\n')
-                self.app['preview_tree'].insert('end', pprint.pformat(vinyl.attr))  ## ULTRA HACK BLACK MAGIC
+                self.app['preview_tree'].insert('end', pprint.pformat(vinyl.attr))  ## todo: ULTRA HACK BLACK MAGIC
 
     def file_export(self):
         TransformerController.export(self.vinyl_list)

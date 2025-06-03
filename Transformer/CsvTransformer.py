@@ -21,22 +21,15 @@ class CsvTransformer(Transformer):
 
                 vinyl_list = []
                 headers = {}
-                i = 0
                 for row in reader:
                     if has_header:
                         headers = row
                         has_header = False
                         continue
 
-                    vinyl_list.append(self.create_vinyl_from_row(row, headers))
-                    i += 1
+                    vinyl_list.append(dict(zip(headers, row)))
 
-                return vinyl_list
+                return self.adapter.adapt(vinyl_list)
 
         except FileNotFoundError as error:
             return error.strerror
-
-    def create_vinyl_from_row(self, row, headers):
-        # May not be enough. See: izip
-        paired_dict = dict(zip(headers, row))
-        return self.adapter.adapt(paired_dict)
