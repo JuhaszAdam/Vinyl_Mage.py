@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import urllib.request
+from http.client import HTTPResponse
 from urllib.error import HTTPError
 
 import requests
@@ -110,9 +111,11 @@ class BertusAdapter(AbstractAdapter):
             if key == 'Id':
                 vinyl.attr['product.model'] = attr
                 if self.config['_get_info_from_api']['tracklist'] == "1":
-                    tracklist = self._fetch_from_api(f'/api/v1/articles/{attr}/tracks').read()
-                    tracklist = self._generate_html_from_tracklist(tracklist)
-                    vinyl.attr['product_description.custom_content.hu'] = tracklist
+                    tracklist = self._fetch_from_api(f'/api/v1/articles/{attr}/tracks')
+                    if isinstance(tracklist, HTTPResponse):
+                        tracklist = tracklist.read()
+                        tracklist = self._generate_html_from_tracklist(tracklist)
+                        vinyl.attr['product_description.custom_content.hu'] = tracklist
             if key == 'EANCode':
                 vinyl.attr['product.gtin'] = attr
             if key == 'Title':
@@ -123,14 +126,20 @@ class BertusAdapter(AbstractAdapter):
             if key == 'Links':
                 for subkey, link in attr.items():
                     if subkey == 'dvdInfo' and self.config['_get_info_from_api']['dvdInfo'] == "1":
-                        dvd_info = self._fetch_from_api(link['Href']).read()
-                        vinyl.attr['dvdInfo'] = dvd_info
+                        response = self._fetch_from_api(link['Href'])
+                        if isinstance(response, HTTPResponse):
+                            vinyl.attr['dvdInfo'] = response.read()
+
                     if subkey == 'extraInfo' and self.config['_get_info_from_api']['extraInfo'] == "1":
-                        dvd_info = self._fetch_from_api(link['Href']).read()
-                        vinyl.attr['extraInfo'] = dvd_info
+                        response = self._fetch_from_api(link['Href'])
+                        if isinstance(response, HTTPResponse):
+                            vinyl.attr['extraInfo'] = response.read()
+
                     if subkey == 'classicalInfo' and self.config['_get_info_from_api']['classicalInfo'] == "1":
-                        dvd_info = self._fetch_from_api(link['Href']).read()
-                        vinyl.attr['classicalInfo'] = dvd_info
+                        response = self._fetch_from_api(link['Href'])
+                        if isinstance(response, HTTPResponse):
+                            vinyl.attr['classicalInfo'] = response.read()
+
                     if (subkey == 'cover'
                             and not link['Href'] == 'https://my.bertus.com/assets/images/imcomingsoonbertus.svg'):
                         file_name = os.path.basename(link['Href'])
