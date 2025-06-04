@@ -121,7 +121,6 @@ class BertusAdapter(AbstractAdapter):
             if key == 'MajorDescription':
                 if not str(attr) == "0":
                     major = str(attr)
-                    vinyl.attr['product.manufacturer_id'] = major
 
             if key == 'LabelDescription':
                 if not str(attr) == "0":
@@ -183,6 +182,10 @@ class BertusAdapter(AbstractAdapter):
         vinyl.attr['product.image_alt'] = name
         badges.append("Rendelhető")
         vinyl.attr['product_badges_to_product.badge_id'] = ";".join(badges)
+        if major:
+            vinyl.attr['product.manufacturer_id'] = major
+        else:
+            vinyl.attr['product.manufacturer_id'] = label
 
         return vinyl
 
