@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import urllib.request
+from datetime import datetime
 from http.client import HTTPResponse
 from urllib.error import HTTPError
 
@@ -74,39 +75,58 @@ class BertusAdapter(AbstractAdapter):
         categories = []
         category_ids = []
         short_description = []
-        label = []
+        label = ""
+        major = ""
         description_tags = []
         name = ""
+        badges = []
         for key, attr in item.items():
             if key == 'ReleaseDate':
-                short_description.insert(0, f"Megjelenés: {parser.parse(attr).strftime('%Y. %m. %d')}")
+                release_date = parser.parse(attr)
+                if datetime.now() < release_date:
+                    vinyl.attr['product.stock_status_id'] = "Előrendelhető"
+                short_description.insert(0, f"Megjelenés: {release_date.strftime('%Y. %m. %d')}")
             if key == 'Artist':
                 vinyl.attr['attr_values.eloado.hu'] = attr
-                name += f"{attr} - "
-                short_description.insert(1, f"Előadó: {attr}")
+                vinyl.attr['product.product_class_id'] = 'Album'
+                name += f"{attr}"
                 description_tags.insert(1, attr)
             if key == 'Genre':
                 category_key = self.config['bertus_categories'].get(attr)
                 if category_key:
-                    categories.append(self.config['bb_categories'][str(category_key)])
-                    category_ids.append(str(category_key))
                     category_name = self.config['bb_categories'][str(category_key)]
+                    category_name = self.truncate_at_symbol(category_name)
+                    categories.append(category_name)
+                    category_ids.append(str(category_key))
                     description_tags.insert(2, category_name)
                     short_description.insert(2, f"Műfaj: {category_name}")
                 else:
                     print(f'Genre key not configured: {attr}')
             if key == 'MediaId':
                 short_description.insert(3, f"Formátum: {attr}")
+                match str(attr):
+                    case "LP":
+                        badges.append(attr)
+                    case "DVD":
+                        badges.append(attr)
+                    case "CD":
+                        badges.append(attr)
+                    case "12in":
+                        badges.append("LP")
+                    case _:
+                        print(f"\nIsmeretlen Badge: {attr}\n")
+
             if key == 'OriginDescription':
                 short_description.insert(4, f"Származás: {attr}")
             if key == 'MajorDescription':
                 if not str(attr) == "0":
-                    label.insert(0, str(attr))
-                    vinyl.attr['product.manufacturer_id'] = str(attr)
+                    major = str(attr)
+                    vinyl.attr['product.manufacturer_id'] = major
 
             if key == 'LabelDescription':
-                label.insert(1, str(attr))
-                description_tags.insert(0, str(attr))
+                if not str(attr) == "0":
+                    label = str(attr)
+                    description_tags.insert(0, label)
 
             if key == 'Id':
                 vinyl.attr['product.model'] = attr
@@ -119,9 +139,10 @@ class BertusAdapter(AbstractAdapter):
             if key == 'EANCode':
                 vinyl.attr['product.gtin'] = attr
             if key == 'Title':
-                vinyl.attr['product_description.name.hu'] = name + attr
+                vinyl.attr['product_description.name.hu'] = name + ' - ' + attr
             if key == 'ListPrice':
                 vinyl.attr['product.alapar'] = attr['Amount']
+                vinyl.attr['product.product_cost'] = attr['Amount']
 
             if key == 'Links':
                 for subkey, link in attr.items():
@@ -151,12 +172,17 @@ class BertusAdapter(AbstractAdapter):
                                 handler.write(img_data)
                             handler.close()
                         vinyl.attr['product.image'] = 'product/' + file_name
-        short_description.insert(6, f"Kiadó: {" - ".join(label)}")
+        short_description.insert(6, f"Kiadó: {major}")
+        short_description.insert(7, f"Label: {label}")
         vinyl.attr['product_to_category.category_name'] = ";".join(categories)
         vinyl.attr['product_to_category.category_id'] = ";".join(category_ids)
         vinyl.attr['product_description.meta_keywords.hu'] = ",".join(description_tags)
-        vinyl.attr['product_description.short_description.hu'] = "\n".join(short_description)
+        vinyl.attr['product_description.short_description.hu'] = "<br>".join(short_description)
         vinyl.attr['product_description.parameters.hu'] = "\n".join(short_description)
+        vinyl.attr['product_tags.tag.hu'] = ";".join(description_tags)
+        vinyl.attr['product.image_alt'] = name
+        badges.append("Rendelhető")
+        vinyl.attr['product_badges_to_product.badge_id'] = ";".join(badges)
 
         return vinyl
 
@@ -166,21 +192,12 @@ class BertusAdapter(AbstractAdapter):
         vinyl.attr['product.free_shipping'] = False
         vinyl.attr['product.sort_order'] = 0
         vinyl.attr['product.product_ring_id'] = 0
+        vinyl.attr['product.tax_class_id'] = 27.0
         vinyl.attr['product.szorzo'] = self.config['product.szorzo']
         vinyl.attr['product_description.meta_description.hu'] = "[CATEGORY]"
         vinyl.attr['product_description.custom_title.hu'] = "[PRODUCT]"
         vinyl.attr['product_description.quantity_name.hu'] = "db"
         vinyl.attr['product_description.custom_content_title.hu'] = "Tracklista"
-        ##testing
-        # vinyl.attr['product_description.custom_content.title.hu'] = "product_description.custom_content.title.hu"
-        # vinyl.attr['product_description.custom_content.title'] = "product_description.custom_content.title"
-        # vinyl.attr['product_description.custom_content_title'] = "product_description.custom_content_title"
-        # vinyl.attr['product_tags'] = "product_tags"
-        # vinyl.attr['product_tags.hu'] = "product_tags.hu"
-        # vinyl.attr['product.custom_content1'] = "product.custom_content1"
-        # vinyl.attr['product.custom_content1.hu'] = "product.custom_content1.hu"
-        # vinyl.attr['product_custom_content1'] = "product_custom_content1"
-        # vinyl.attr['product_custom_content1.hu'] = "product_custom_content1.hu"
 
     def _generate_bb_id(self):
         self.config['current_bb_id'] += 1
@@ -209,8 +226,10 @@ class BertusAdapter(AbstractAdapter):
                 self._verbose_sleep(int(e.hdrs["Retry-After"]))
 
                 return self._fetch_from_api(original_url)
+            return None
         except Exception as e:
             print(e)
+            return None
 
     @staticmethod
     def _generate_html_from_tracklist(tracklist):
@@ -231,6 +250,10 @@ class BertusAdapter(AbstractAdapter):
             html_tracklist += "</ol>"
 
         return html_tracklist
+
+    @staticmethod
+    def truncate_at_symbol(s: str, symbol='>'):
+        return s.rsplit(symbol, 1)[-1]
 
     @staticmethod
     def _verbose_sleep(seconds):
