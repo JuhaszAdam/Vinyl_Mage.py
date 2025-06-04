@@ -26,7 +26,7 @@ class XmlTransformer(Transformer):
         return self.adapter.adapt(paired_list)
 
     @staticmethod
-    def export(vinyl_list: list):
+    def export(vinyl_list: list, location, filename):
         products = ET.Element('products')
         for vinyl in vinyl_list:
             product = ET.SubElement(products, 'product')
@@ -35,4 +35,4 @@ class XmlTransformer(Transformer):
 
         tree = ET.ElementTree(products)
         ET.indent(tree, '    ')
-        tree.write('Resources/Test_Import.xml', encoding="utf-8", xml_declaration=True)
+        tree.write(f"{location}/{filename}", encoding="utf-8", xml_declaration=True)

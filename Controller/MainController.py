@@ -1,4 +1,5 @@
 import pprint
+import subprocess
 
 from customtkinter import *
 
@@ -27,64 +28,61 @@ class MainController:
         self.root.grid_rowconfigure(0, weight=0)
         self.root.grid_rowconfigure(1, weight=1)
 
-        label_import_file = CTkLabel(
-            self.root,
-            text="Importálás",
-        )
-
-        label_preview_data = CTkLabel(
-            self.root,
-            text="Előnézet",
-        )
-
-        input_file_name = CTkEntry(
-            self.root,
-            placeholder_text="minta.csv",
-        )
-        ### TODO DELETE ME ###
-        input_file_name.insert('end', "Wish_list-2025-6-3.csv")  # TODO: for debug
-
         preview_tree = CTkTextbox(
             self.root,
+            border_color=ThemeManager.theme["CTkButton"]["fg_color"],
+            border_width=1
         )
 
         btn_import = CTkButton(
             self.root,
-            text="Importálás",
+            text="Import",
             command=self.file_import,
+            border_width=1,
+            border_color=ThemeManager.theme["CTkButton"]["fg_color"],
         )
 
         btn_export = CTkButton(
             self.root,
-            text="Exportálás",
+            text="Export",
             command=self.file_export,
+            state="disabled",
+            fg_color="transparent",
+            border_color=ThemeManager.theme["CTkButton"]["fg_color"],
+            border_width=1
+        )
+
+        progress_bar = CTkProgressBar(
+            self.root,
+            mode="indeterminate",
         )
 
         ### Apply to Grid ###
-        label_import_file.grid(row=0, column=0, sticky='nw', pady=20, padx=20)
-        label_preview_data.grid(row=0, column=1, sticky='ne', pady=20, padx=20)
+        preview_tree.grid(row=1, column=0, sticky='NSEW', pady=20, padx=20, columnspan=3)
 
-        input_file_name.grid(row=1, column=0, sticky='nw', pady=20, padx=20)
-        input_file_name.focus()
-        preview_tree.grid(row=1, column=1, sticky='NSEW', pady=20, padx=20)
-
-        btn_import.grid(row=2, column=0, sticky='nw', pady=20, padx=20)
-        btn_export.grid(row=2, column=1, sticky='ne', pady=20, padx=20)
+        btn_import.grid(row=2, column=0, sticky='nw', pady=20, padx=20, ipady=20, ipadx=20)
+        btn_export.grid(row=2, column=2, sticky='ne', pady=20, padx=20, ipady=20, ipadx=20)
 
         ### Save references ###
-        self.app['label_import_file'] = label_import_file
-        self.app['label_preview_data'] = label_preview_data
-        self.app['input_file_name'] = input_file_name
         self.app['preview_tree'] = preview_tree
         self.app['btn_import'] = btn_import
         self.app['btn_export'] = btn_export
+        self.app['progress_bar'] = progress_bar
+
 
         ### Fullscreen ###
         self.root.state('zoomed')
 
     def file_import(self, event=None):
-        filename = self.work_directory + "\\" + self.app['input_file_name'].get()
+        self.app['progress_bar'].grid(row=2, column=1, sticky='ew', pady=20, padx=20)
+        self.app['progress_bar'].start()
+        filename = filedialog.askopenfilename(
+            initialdir="Resources",
+            title="Select a File",
+            filetypes=(("Data files", "*.json* *.xml *.csv"), ("All files", "*.*")))
+
         if len(filename) != 0:
+            self.app['btn_export'].configure(fg_color=ThemeManager.theme["CTkButton"]["fg_color"], state="normal")
             self.vinyl_list = TransformerController.transform(filename)
             self.app['preview_tree'].delete('0.0', 'end')
             self.app['preview_tree'].insert('end', f'\nImportált termékek száma: {len(self.vinyl_list)}\n')
@@ -92,8 +90,21 @@ class MainController:
                 self.app['preview_tree'].insert('end', f'\n*********** Item ***********\n')
                 self.app['preview_tree'].insert('end', pprint.pformat(vinyl.attr))  ## todo: ULTRA HACK BLACK MAGIC
 
+        self.app['progress_bar'].stop()
+        self.app['progress_bar'].grid_forget()
+
     def file_export(self):
-        TransformerController.export(self.vinyl_list)
+        self.app['progress_bar'].grid(row=2, column=1, sticky='ew', pady=20, padx=20)
+        self.app['progress_bar'].start()
+
+        location = 'Resources'
+        filename = 'shoprenter_import.xml'
+        path = os.path.join(os.getcwd(), location, filename)
+        TransformerController.export(self.vinyl_list, location, filename)
+        subprocess.Popen(f'explorer /select, {path}')
+
+        self.app['progress_bar'].stop()
+        self.app['progress_bar'].grid_forget()
 
     def refresh_preview(self):
         preview_tree = self.app['preview_tree']
