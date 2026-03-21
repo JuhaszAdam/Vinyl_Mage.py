@@ -171,16 +171,6 @@ class BertusAdapter(AbstractAdapter):
         vinyl.attr['product_description.custom_title.hu'] = "[PRODUCT]"
         vinyl.attr['product_description.quantity_name.hu'] = "db"
         vinyl.attr['product_description.custom_content_title.hu'] = "Tracklista"
-        ##testing
-        # vinyl.attr['product_description.custom_content.title.hu'] = "product_description.custom_content.title.hu"
-        # vinyl.attr['product_description.custom_content.title'] = "product_description.custom_content.title"
-        # vinyl.attr['product_description.custom_content_title'] = "product_description.custom_content_title"
-        # vinyl.attr['product_tags'] = "product_tags"
-        # vinyl.attr['product_tags.hu'] = "product_tags.hu"
-        # vinyl.attr['product.custom_content1'] = "product.custom_content1"
-        # vinyl.attr['product.custom_content1.hu'] = "product.custom_content1.hu"
-        # vinyl.attr['product_custom_content1'] = "product_custom_content1"
-        # vinyl.attr['product_custom_content1.hu'] = "product_custom_content1.hu"
 
     def _generate_bb_id(self):
         self.config['current_bb_id'] += 1
