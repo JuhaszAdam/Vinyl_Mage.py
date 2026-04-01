@@ -1,12 +1,15 @@
+import json
 import os
+import pprint
 import subprocess
 from tkinter import filedialog
 
 import customtkinter as ctk
-from customtkinter import ThemeManager, CTkButton, CTk, CTkProgressBar, CTkScrollableFrame, CTkLabel, \
+from customtkinter import CTkTextbox, ThemeManager, CTkButton, CTk, CTkProgressBar, CTkScrollableFrame, CTkLabel, \
     CTkFrame
 
 from Controller.TransformerController import TransformerController
+from Tools.BertusApiKeyFetcher import BertusApiKeyFetcher
 from View.LayoutView import LayoutView
 
 
@@ -70,6 +73,14 @@ class MainController:
             width=30,
         )
 
+        # Új gomb az API kulcs frissítéséhez
+        key_update_button = CTkButton(
+            self.root,
+            text='🔑',
+            command=self._update_api_key,
+            width=30,
+        )
+
         appearance_mode_button = ctk.CTkButton(
             self.root,
             text='☀' if ctk.get_appearance_mode() == "Dark" else '☾',
@@ -89,6 +100,7 @@ class MainController:
         btn_export.grid(row=3, column=2, sticky='ne', pady=20, padx=20, ipady=20, ipadx=20)
         appearance_mode_button.grid(row=4, column=3, ipadx=2, padx=3)
         theme_button.grid(row=4, column=4, ipadx=2, padx=3)
+        key_update_button.grid(row=4, column=5, ipadx=2, padx=3)
 
         ### Save references ###
         self.app['preview_tree'] = preview_tree
@@ -186,3 +198,48 @@ class MainController:
 
     def _toggle_theme(self):
         self.layout_view.toggle_theme(self.root)
+
+    def _update_api_key(self):
+        """Az Authorization token automatizált frissítése a háttérben."""
+        self.app['progress_bar'].grid(row=3, column=1, sticky='ew', pady=20, padx=20)
+        self.app['progress_bar'].start()
+
+        try:
+            fetcher = BertusApiKeyFetcher()
+
+            # Új token beolvasása a frissített config-ból
+            config_path = os.path.join(os.getcwd(), 'Resources', 'config.json')
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+
+            new_token = config.get('Authorization')
+            print(f"Sikeres automatikus frissítés! Új token: {new_token[:50]}...")
+
+            # Felhasználói visszajelzés
+            #self.app['preview_tree'].insert('end', f'\n[INFO] Authorization token sikeresen frissítve.\n')
+
+        except Exception as e:
+            print(f"Hiba az automatikus frissítés során: {e}")
+            # Ha az automatikus nem sikerül, felajánljuk a manuálisat
+            dialog = ctk.CTkInputDialog(text="Hiba az automatikus frissítésnél. Add meg manuálisan a Bearer tokent:",
+                                        title="Authorization Frissítése")
+            new_token = dialog.get_input()
+            if new_token:
+                self._save_manual_token(new_token)
+
+        self.app['progress_bar'].stop()
+        self.app['progress_bar'].grid_forget()
+
+    def _save_manual_token(self, new_token):
+        config_path = os.path.join(os.getcwd(), 'Resources', 'config.json')
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            # Biztosítjuk a "Bearer " előtagot
+            if not new_token.startswith("Bearer "):
+                new_token = f"Bearer {new_token}"
+            config['Authorization'] = new_token
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=4)
+        except Exception as e:
+            print(f"Hiba a manuális mentéskor: {e}")
