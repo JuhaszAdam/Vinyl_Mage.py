@@ -226,10 +226,11 @@ class LayoutView:
                         bg=ThemeManager.theme['CTkTextbox']['fg_color'][dark_mode],
                         bd=ThemeManager.theme['CTkTextbox']['border_width'],
                     )
-                case "CTkScrollableFrame":
-                    widget.configure(
-                        corner_radius=ThemeManager.theme['CTkScrollableFrame']['corner_radius'],
-                    )
+#                    TODO: Fix this
+#                case "CTkScrollableFrame":
+#                    widget.configure(
+#                        corner_radius=ThemeManager.theme['CTkScrollableFrame']['corner_radius'],
+#                    )
                 case "DropdownMenu":
                     widget.configure(
                         fg_color=ThemeManager.theme['DropdownMenu']['fg_color'],
